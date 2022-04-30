@@ -33,18 +33,25 @@ async function dbConnect() {
             const query = {};
 
             const limitItem = parseInt(req.query.limit)
-            const page = parseInt(req.query.page)
+            const page = req.query.page
             const count = req.query.count;
+            
 
             if (count) {
 
                 // this block will only return total Inventory counts
-                const query = {};
                 const totalCount = await inventoryCollection.countDocuments(query);
                 res.send({totalCount})
                
             }
             else if(page){
+
+                const cursor = inventoryCollection.find(query);
+                const inventories = await cursor.skip(page*10).limit(10).toArray()
+
+                
+                res.send(inventories)
+                
                 
             }
             else {
