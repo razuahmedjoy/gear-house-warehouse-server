@@ -20,8 +20,8 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-async function dbConnect(){
-    try{
+async function dbConnect() {
+    try {
 
         await client.connect();
         const inventoryCollection = client.db("gearHouse").collection("inventory");
@@ -29,17 +29,47 @@ async function dbConnect(){
         // all apis
 
         // get all inventories
-        app.get('/inventories', async (req,res)=>{
+        app.get('/inventories', async (req, res) => {
             const query = {};
 
-            const cursor = inventoryCollection.find(query);
+            const limitItem = parseInt(req.query.limit)
+            const page = parseInt(req.query.page)
+            const count = req.query.count;
 
-            const inventories = await cursor.limit(6).toArray();
-            res.send(inventories);
+            if (count) {
+
+                // this block will only return total Inventory counts
+                const query = {};
+                const totalCount = await inventoryCollection.countDocuments(query);
+                res.send({totalCount})
+               
+            }
+            else if(page){
+                
+            }
+            else {
+                const cursor = inventoryCollection.find(query);
+
+
+                if (limitItem) {
+
+                    const inventories = await cursor.limit(limitItem).toArray();
+
+                    res.send(inventories);
+
+
+
+                } else {
+
+                    const inventories = await cursor.toArray();
+                    res.send(inventories);
+                }
+            }
+
         })
 
         // get single inventory by id.
-        app.get('/inventory/:id',async (req,res) => {
+        app.get('/inventory/:id', async (req, res) => {
             const id = req.params.id;
             const query = {
                 _id: ObjectId(id),
@@ -50,52 +80,54 @@ async function dbConnect(){
         })
 
         // delivered and reduce quantity by 1:
-        app.get('/delivered/:id', async (req,res)=>{
+        app.get('/delivered/:id', async (req, res) => {
 
             const id = req.params.id;
             const filter = {
-                _id:ObjectId(id)
+                _id: ObjectId(id)
             }
             const foundItem = await inventoryCollection.findOne(filter);
             const newQty = parseInt(foundItem.quantity) - 1
-            
-            const options = {upsert:true,}
+
+            const options = { upsert: true, }
             const updateDoc = {
-                $set:{
-                    quantity : newQty
+                $set: {
+                    quantity: newQty
                 }
             }
 
-            const result = await inventoryCollection.updateOne(filter,updateDoc,options)
+            const result = await inventoryCollection.updateOne(filter, updateDoc, options)
+
             res.send(result)
+
 
         })
 
         // update quantity by id
-        app.post('/update/:id',async (req,res)=>{
+        app.post('/update/:id', async (req, res) => {
             const id = req.params.id;
-            const {qty} = req.body;
+            const { qty } = req.body;
 
             const filter = {
-                _id:ObjectId(id),
+                _id: ObjectId(id),
             }
-            const options = {upsert:true}
+            const options = { upsert: true }
             const updateDoc = {
-                $set:{
-                    quantity : qty,
+                $set: {
+                    quantity: qty,
 
                 }
             }
 
-            const result = await inventoryCollection.updateOne(filter,updateDoc,options)
+            const result = await inventoryCollection.updateOne(filter, updateDoc, options)
 
             res.send(result)
         })
 
-        
+
         // add inventory
-        app.post('/additem',async (req,res)=>{
-            
+        app.post('/additem', async (req, res) => {
+
             const data = req.body;
 
             const result = await inventoryCollection.insertOne(data)
@@ -105,22 +137,21 @@ async function dbConnect(){
 
 
         // delete an inventory
-
-        app.post('/delete', async (req,res)=>{
+        app.post('/delete', async (req, res) => {
             const id = req.body.id;
             const query = {
-                _id:ObjectId(id)
+                _id: ObjectId(id)
             }
 
             const result = await inventoryCollection.deleteOne(query);
 
             res.send(result);
         })
-   
+
 
     }
-    finally{
-       
+    finally {
+
     }
 }
 
