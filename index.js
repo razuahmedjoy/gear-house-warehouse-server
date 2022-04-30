@@ -36,7 +36,7 @@ async function dbConnect(){
         })
 
         app.get('/', (req, res) => {
-            res.send("Hello server running and database connected");
+            res.send("Database cconnected");
         })
 
     }
