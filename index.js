@@ -14,7 +14,8 @@ app.use(express.json())
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const res = require('express/lib/response');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.mwock.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -26,6 +27,8 @@ async function dbConnect(){
         const inventoryCollection = client.db("gearHouse").collection("inventory");
 
         // all apis
+
+        // get all inventories
         app.get('/inventories', async (req,res)=>{
             const query = {};
 
@@ -33,6 +36,70 @@ async function dbConnect(){
 
             const inventories = await cursor.limit(6).toArray();
             res.send(inventories);
+        })
+
+        // get single inventory by id.
+        app.get('/inventory/:id',async (req,res) => {
+            const id = req.params.id;
+            const query = {
+                _id: ObjectId(id),
+            }
+
+            const result = await inventoryCollection.findOne(query);
+            res.send(result)
+        })
+
+        // delivered and reduce quantity by 1:
+        app.get('/delivered/:id', async (req,res)=>{
+
+            const id = req.params.id;
+            const filter = {
+                _id:ObjectId(id)
+            }
+            const foundItem = await inventoryCollection.findOne(filter);
+            const newQty = parseInt(foundItem.quantity) - 1
+            
+            const options = {upsert:true,}
+            const updateDoc = {
+                $set:{
+                    quantity : newQty
+                }
+            }
+
+            const result = await inventoryCollection.updateOne(filter,updateDoc,options)
+            res.send(result)
+
+        })
+
+        // update quantity by id
+        app.post('/update/:id',async (req,res)=>{
+            const id = req.params.id;
+            const {qty} = req.body;
+
+            const filter = {
+                _id:ObjectId(id),
+            }
+            const options = {upsert:true}
+            const updateDoc = {
+                $set:{
+                    quantity : qty,
+
+                }
+            }
+
+            const result = await inventoryCollection.updateOne(filter,updateDoc,options)
+
+            res.send(result)
+        })
+
+        // add inventory
+        app.post('/additem',async (req,res)=>{
+            
+            const data = req.body;
+
+            const result = await inventoryCollection.insertOne(data)
+
+            res.send(result)
         })
 
    
