@@ -35,9 +35,7 @@ async function dbConnect(){
             res.send(inventories);
         })
 
-        app.get('/', (req, res) => {
-            res.send("Database cconnected");
-        })
+   
 
     }
     finally{
@@ -47,7 +45,9 @@ async function dbConnect(){
 
 dbConnect().catch(console.dir)
 
-
+app.get('/', (req, res) => {
+    res.send("Database cconnected");
+})
 
 app.listen(port, () => {
     console.log(`Server running at following url http://localhost:${port}`)
