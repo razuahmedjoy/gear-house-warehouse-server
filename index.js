@@ -92,6 +92,7 @@ async function dbConnect(){
             res.send(result)
         })
 
+        
         // add inventory
         app.post('/additem',async (req,res)=>{
             
@@ -102,6 +103,19 @@ async function dbConnect(){
             res.send(result)
         })
 
+
+        // delete an inventory
+
+        app.post('/delete', async (req,res)=>{
+            const id = req.body.id;
+            const query = {
+                _id:ObjectId(id)
+            }
+
+            const result = await inventoryCollection.deleteOne(query);
+
+            res.send(result);
+        })
    
 
     }
