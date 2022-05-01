@@ -3,6 +3,8 @@ const express = require('express');
 // added it for cors 
 const cors = require('cors');
 
+const jwt = require('jsonwebtoken')
+
 // added to configure secret keys
 require('dotenv').config()
 
@@ -26,6 +28,21 @@ async function dbConnect() {
         await client.connect();
         const inventoryCollection = client.db("gearHouse").collection("inventory");
 
+
+
+        // JWT TOken signing...
+        app.post('/get-token', async (req, res)=>{
+
+            // to generate SECRET_SIGN_KEY
+            // require('crypto').randomBytes(64).toString('hex')
+            const user = req.body;
+            const accessToken = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1d'})
+            
+            res.send({accessToken})
+
+
+        })
+
         // all apis
 
         // get all inventories
@@ -34,6 +51,7 @@ async function dbConnect() {
 
             const limitItem = parseInt(req.query.limit)
             const page = req.query.page
+            const perpage = parseInt(req.query.perpage)
             const count = req.query.count;
             
 
@@ -44,10 +62,11 @@ async function dbConnect() {
                 res.send({totalCount})
                
             }
-            else if(page){
+            else if(page && perpage){
+
 
                 const cursor = inventoryCollection.find(query);
-                const inventories = await cursor.skip(page*10).limit(10).toArray()
+                const inventories = await cursor.skip(parseInt(page)*perpage).limit(perpage).toArray()
 
                 
                 res.send(inventories)
@@ -72,6 +91,21 @@ async function dbConnect() {
                     res.send(inventories);
                 }
             }
+
+        })
+
+        // get inventories by user
+        app.post('/my-inventories', async (req, res)=>{
+            const filter = {
+                user_email : req.body.email,
+
+            }
+            const cursor = inventoryCollection.find(filter);
+
+            const inventories = await cursor.toArray();
+
+            res.send(inventories);
+
 
         })
 
