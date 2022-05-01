@@ -14,6 +14,27 @@ const port = process.env.PORT || 8000
 app.use(cors());
 app.use(express.json())
 
+// verifyJWTTOken before sending inventories by user
+
+function veryJwtToken(req,res,next) {
+
+    const authHeader = req.headers.authorization;
+    if(!authHeader){
+        return res.status(401).send({message: 'UnAuthorized Access'})
+
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    jwt.verify(token,process.env.ACCESS_TOKEN_SECRET, (err,decoded) => {
+        if(err){
+            return res.status(403).send({message: 'Access Forbidden'});
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
+
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -39,6 +60,56 @@ async function dbConnect() {
             const accessToken = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1d'})
             
             res.send({accessToken})
+
+
+        })
+
+         // get inventories by user
+        //  SECURE API by JWT
+
+         app.post('/my-inventories',veryJwtToken, async (req, res)=>{
+
+            const decodedemail = req.decoded.email;
+            
+            const email = req.body.email;
+
+            const page = req.query.page
+            const perpage = parseInt(req.query.perpage)
+
+            // console.log(email)
+            // console.log(decodedemail)
+
+            if(email === decodedemail){
+
+                const filter = {
+                    user_email : req.body.email,
+    
+                }
+                const cursor = inventoryCollection.find(filter);
+
+                if(page && perpage){
+
+
+                    
+                    const inventories = await cursor.skip(parseInt(page)*perpage).limit(perpage).toArray()
+    
+                    
+                    res.send(inventories)
+                    
+                    
+                }
+                else{
+                    
+                    const inventories = await cursor.toArray();
+        
+                    res.send(inventories);
+                }
+
+            }
+            else{
+                res.status(403).send({message:"Forbidden access"});
+            }
+            
 
 
         })
@@ -94,20 +165,7 @@ async function dbConnect() {
 
         })
 
-        // get inventories by user
-        app.post('/my-inventories', async (req, res)=>{
-            const filter = {
-                user_email : req.body.email,
-
-            }
-            const cursor = inventoryCollection.find(filter);
-
-            const inventories = await cursor.toArray();
-
-            res.send(inventories);
-
-
-        })
+       
 
         // get single inventory by id.
         app.get('/inventory/:id', async (req, res) => {
