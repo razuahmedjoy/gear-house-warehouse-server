@@ -48,6 +48,7 @@ async function dbConnect() {
 
         await client.connect();
         const inventoryCollection = client.db("gearHouse").collection("inventory");
+        const blogCollection = client.db("gearHouse").collection("blogs");
 
 
 
@@ -136,7 +137,7 @@ async function dbConnect() {
             else if(page && perpage){
 
 
-                const cursor = inventoryCollection.find(query);
+                const cursor = inventoryCollection.find(query).sort( { _id: -1 } );
                 const inventories = await cursor.skip(parseInt(page)*perpage).limit(perpage).toArray()
 
                 
@@ -145,7 +146,7 @@ async function dbConnect() {
                 
             }
             else {
-                const cursor = inventoryCollection.find(query);
+                const cursor = inventoryCollection.find(query).sort( { _id: -1 } );
 
 
                 if (limitItem) {
@@ -234,6 +235,28 @@ async function dbConnect() {
             res.send(result)
         })
 
+        // update a document
+        app.put('/update', async (req, res) => {
+            const data = req.body;
+            const {_id,...doc} = data;
+
+            const filter = {
+                _id: ObjectId(_id),
+            }
+            const options = { upsert: true};
+
+            const updateDoc = {
+                $set:doc,
+            }
+
+            const result = await inventoryCollection.updateOne(filter,updateDoc,options);
+
+            
+
+            // console.log(data);
+            res.send(result);
+
+        })
 
         // delete an inventory
         app.post('/delete', async (req, res) => {
@@ -248,7 +271,43 @@ async function dbConnect() {
         })
 
 
+        // add blogs to Database
+        app.post('/add-blog', async (req, res) => {
+            const blogData = req.body;
+            const result = await blogCollection.insertOne(blogData)
+            res.send(result)
+
+        })
+
+        // get Blogs
+        app.get('/blogs', async (req, res) => {
+            
+            const cursor = blogCollection.find({})
+            const blogs = await cursor.toArray();
+
+            res.send(blogs)
+
+        })
+
+
+        // get single Blog by id
+        app.get('/blog/:id', async (req, res) => {
+
+            const id = req.params.id;
+            // console.log(id)
+            const filter = {
+                _id : ObjectId(id)
+            }
+
+            const blog = await blogCollection.findOne(filter)
+
+            res.send(blog)
+
+        })
+
+
     }
+
     finally {
 
     }
