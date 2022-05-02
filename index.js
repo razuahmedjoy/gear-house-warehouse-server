@@ -14,7 +14,8 @@ const port = process.env.PORT || 8000
 app.use(cors());
 app.use(express.json())
 
-// verifyJWTTOken before sending inventories by user
+// verifyJWTTOken before sending inventories by usser
+
 
 function veryJwtToken(req,res,next) {
 
