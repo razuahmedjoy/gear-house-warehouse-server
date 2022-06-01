@@ -317,7 +317,7 @@ async function dbConnect() {
 dbConnect().catch(console.dir)
 
 app.get('/', (req, res) => {
-    res.send("Database cconnected");
+    res.send("Database cconnected. updated!");
 })
 
 app.listen(port, () => {
